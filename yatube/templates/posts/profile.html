@@ -21,8 +21,13 @@
           </p>
         <p><a href="{% url 'posts:post_detail' post.pk %}">подробная информация </a>  
         </p>
-        <p><a href="{% url 'posts:group_posts' post.group.slug %}">все записи группы </a>        
-        </p>
+        
+          {% if post.group %}  
+          Группа: {{ post.group.title }}  
+          <a href="{% url 'posts:group_posts' post.group.slug %}">все записи группы</a>
+        
+          {% endif %}         
+      
         <hr>
         {% endfor %}
         {% include 'posts/includes/paginator.html' %} 
