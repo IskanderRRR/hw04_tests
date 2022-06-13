@@ -89,11 +89,11 @@ class TaskPagesTests(TestCase):
         response = self.client.get(self.paginated_urls[0][0] + "?page=2")
         self.assertEqual(len(response.context["page_obj"]), 3)
 
-    def test_first_group_post_page_contains_ten_records(self):
+    def test_first_group_list_page_contains_ten_records(self):
         response = self.client.get(self.paginated_urls[1][0])
         self.assertEqual(len(response.context["page_obj"]), 10)
 
-    def test_second_group_post_page_contains_three_records(self):
+    def test_second_group_list_page_contains_three_records(self):
         response = self.client.get(self.paginated_urls[1][0] + "?page=2")
         self.assertEqual(len(response.context["page_obj"]), 3)
 
@@ -143,8 +143,8 @@ class TaskPagesTests(TestCase):
                 else:
                     self.assertTrue(result)
 
-    def test_post_edit_page_show_correct_context(self):
-        """Шаблон /post_edit сформирован с правильным контекстом."""
+    def test_edit_post_page_show_correct_context(self):
+        """Шаблон /edit_post сформирован с правильным контекстом."""
         response = self.authorized_client.get(self.edit_post_url[0])
         form_fields = {
             "text": forms.fields.CharField,
