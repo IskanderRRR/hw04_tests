@@ -1,11 +1,14 @@
+from django import forms
+from django.conf import settings as conf_settings
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
-from django import forms
 
-from ..models import Post, Group
+from ..models import Group, Post
 
+POSTS_PER_PAGE = conf_settings.POSTS_PER_PAGE
 User = get_user_model()
+TESTING_ATTEMPTS = 13
 
 
 class TaskPagesTests(TestCase):
@@ -23,16 +26,17 @@ class TaskPagesTests(TestCase):
             slug="test-slug-2",
             description="Тестовое описание группы 2",
         )
-        cls.posts = []
-        for i in range(13):
-            cls.posts.append(
-                Post.objects.create(
-                    author=cls.user,
-                    text=f"Тестовый текст поста {i}",
-                    group=cls.group,
-                )
+
+        posts_list = []
+        for i in range(TESTING_ATTEMPTS):
+            posts_list.append(
+                Post(author=cls.user,
+                     text=f'Тестовый текст поста {i}',
+                     id=i,
+                     group=cls.group,
+                     )
             )
-        cls.post = Post.objects.get(id=1)
+        cls.post = Post.objects.bulk_create(posts_list)
         cls.index_url = (reverse("posts:index"), "posts/index.html")
         cls.group_url = (
             reverse("posts:group_posts", kwargs={"slug": cls.group.slug}),
@@ -47,7 +51,7 @@ class TaskPagesTests(TestCase):
             "posts/profile.html",
         )
         cls.post_url = (
-            reverse("posts:post_detail", kwargs={"post_id": cls.post.id}),
+            reverse("posts:post_detail", kwargs={"post_id": cls.post[0].id}),
             "posts/post_detail.html",
         )
         cls.new_post_url = (
@@ -55,7 +59,7 @@ class TaskPagesTests(TestCase):
             "posts/create_post.html",
         )
         cls.edit_post_url = (
-            reverse("posts:post_edit", kwargs={"post_id": cls.post.id}),
+            reverse("posts:post_edit", kwargs={"post_id": cls.post[0].id}),
             "posts/create_post.html",
         )
         cls.paginated_urls = (cls.index_url, cls.group_url, cls.profile_url)
@@ -81,30 +85,6 @@ class TaskPagesTests(TestCase):
                 response = self.authorized_client.get(i[0])
                 self.assertTemplateUsed(response, i[1])
 
-    def test_first_page_contains_ten_records(self):
-        response = self.client.get(self.paginated_urls[0][0])
-        self.assertEqual(len(response.context["page_obj"]), 10)
-
-    def test_second_page_contains_three_records(self):
-        response = self.client.get(self.paginated_urls[0][0] + "?page=2")
-        self.assertEqual(len(response.context["page_obj"]), 3)
-
-    def test_first_group_list_page_contains_ten_records(self):
-        response = self.client.get(self.paginated_urls[1][0])
-        self.assertEqual(len(response.context["page_obj"]), 10)
-
-    def test_second_group_list_page_contains_three_records(self):
-        response = self.client.get(self.paginated_urls[1][0] + "?page=2")
-        self.assertEqual(len(response.context["page_obj"]), 3)
-
-    def test_first_profile_list_page_contains_ten_records(self):
-        response = self.client.get(self.paginated_urls[2][0])
-        self.assertEqual(len(response.context["page_obj"]), 10)
-
-    def test_second_profile_list_page_contains_three_records(self):
-        response = self.client.get(self.paginated_urls[2][0] + "?page=2")
-        self.assertEqual(len(response.context["page_obj"]), 3)
-
     def test_post_detail_page_show_correct_context(self):
         """Шаблон post_detail сформирован с правильным контекстом."""
         response = self.authorized_client.get(self.post_url[0])
@@ -113,35 +93,8 @@ class TaskPagesTests(TestCase):
         post_group_title = first_object.group.title
         post_author_username = first_object.author.username
         self.assertEqual(post_text, "Тестовый текст поста 0")
-        self.assertEqual(post_group_title, "Тестовая группа")
-        self.assertEqual(post_author_username, "auth")
-
-    def test_existing_post_some_pages(self):
-        tests_pages = {
-            self.index_url,
-            self.group_url,
-            self.profile_url,
-            self.group_url_2,
-        }
-        for i in tests_pages:
-            with self.subTest(page=i[0]):
-                response = self.authorized_client.get(i[0])
-                result = False
-                for post in response.context["page_obj"]:
-                    post_text = post.text
-                    post_group_title = post.group.title
-                    post_author_username = post.author.username
-                    if (
-                        post_text == "Тестовый текст поста 12"
-                        and post_group_title == "Тестовая группа"
-                        and post_author_username == "auth"
-                    ):
-                        result = True
-                        break
-                if post_group_title == "Тестовая группа 2":
-                    self.assertFalse(result)
-                else:
-                    self.assertTrue(result)
+        self.assertEqual(post_group_title, self.group.title)
+        self.assertEqual(post_author_username, self.post[0].author.username)
 
     def test_edit_post_page_show_correct_context(self):
         """Шаблон /edit_post сформирован с правильным контекстом."""
@@ -167,3 +120,61 @@ class TaskPagesTests(TestCase):
             with self.subTest(value=value):
                 form_field = response.context.get("form").fields.get(value)
                 self.assertIsInstance(form_field, expected)
+
+
+class PaginatorViewsTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='TestUser2')
+        self.authorized_client = Client()
+        self.authorized_client.force_login(self.user)
+        self.group = Group.objects.create(
+            title='Test group_2',
+            slug='test-slug_2',
+            description='Test description_2',
+        )
+        self.post = Post.objects.bulk_create(
+            [
+                Post(
+                    text='Testing paginator',
+                    author=self.user,
+                    group=self.group,
+                ),
+            ] * TESTING_ATTEMPTS
+        )
+
+    def test_first_page_contains_ten_records(self):
+        templates_pages_names = {
+            reverse('posts:index'): POSTS_PER_PAGE,
+            reverse('posts:group_posts',
+                    kwargs={'slug': self.group.slug}):
+            POSTS_PER_PAGE,
+            reverse('posts:profile',
+                    kwargs={'username': self.user.username}):
+            POSTS_PER_PAGE,
+        }
+        for reverse_template, expected in templates_pages_names.items():
+            with self.subTest(reverse_template=reverse_template):
+                response = self.client.get(reverse_template)
+                self.assertEqual(len(response.context['page_obj']), expected)
+
+    def test_second_page_contains_three_records(self):
+        all_posts = Post.objects.filter(
+            author__username=self.user.username
+        ).count()
+        second_page_posts = all_posts - POSTS_PER_PAGE
+        templates_pages_names = {
+            reverse('posts:index'): second_page_posts,
+            reverse('posts:group_posts',
+                    kwargs={'slug': self.group.slug}): second_page_posts,
+            reverse('posts:profile',
+                    kwargs={'username': self.user.username}):
+            second_page_posts,
+        }
+        for reverse_template, expected in templates_pages_names.items():
+            with self.subTest(reverse_template=reverse_template):
+                response = self.client.get(reverse_template + '?page=2')
+                self.assertEqual(len(response.context['page_obj']), expected)

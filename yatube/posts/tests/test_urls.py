@@ -1,9 +1,10 @@
+from http import HTTPStatus
 from http.client import OK
-from http.client import NOT_FOUND
-from django.contrib.auth import get_user_model
-from django.test import TestCase, Client
 
-from ..models import Post, Group
+from django.contrib.auth import get_user_model
+from django.test import Client, TestCase
+
+from ..models import Group, Post
 
 User = get_user_model()
 
@@ -41,36 +42,30 @@ class PostURLTests(TestCase):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
-    def test_index_url_exists_at_desired_location(self):
-        """Страница / доступна любому пользователю."""
-        response = self.guest_client.get(self.public_urls[0][0])
-        self.assertEqual(response.status_code, OK)
-
-    def test_group_url_exists_at_desired_location(self):
-        """Страница /group/test_slug/ доступна любому пользователю."""
-        response = self.guest_client.get(self.public_urls[1][0])
-        self.assertEqual(response.status_code, OK)
-
-    def test_profile_url_exists_at_desired_location(self):
-        """Страница /profile/auth/ доступна любому пользователю."""
-        response = self.guest_client.get(self.public_urls[2][0])
-        self.assertEqual(response.status_code, OK)
-
-    def test_posts_url_exists_at_desired_location(self):
-        """Страница /posts/1/ доступна любому пользователю."""
-        response = self.guest_client.get(self.public_urls[3][0])
-        self.assertEqual(response.status_code, OK)
-
-    def test_404_url_exists_at_desired_location(self):
-        """Страница /unexisting_page/
-        возращает 404 ошибку любому пользователю."""
-        response = self.guest_client.get(self.unexisting_urls)
-        self.assertEqual(response.status_code, NOT_FOUND)
+    def test_urls_for_unauthorised_users(self):
+        """Страницы public доступны любому пользователю."""
+        page_url_names = {
+            "/": HTTPStatus.OK,
+            f"/group/{self.group.slug}/": HTTPStatus.OK,
+            f"/profile/{self.user.username}/": HTTPStatus.OK,
+            f"/posts/{self.post.id}/": HTTPStatus.OK,
+            "/unexisting_page/": HTTPStatus.NOT_FOUND
+        }
+        for page, expected_status in page_url_names.items():
+            with self.subTest(page=page):
+                response = self.guest_client.get(page).status_code
+                self.assertEqual(response, expected_status)
 
     def test_create_url_exists_at_desired_location(self):
-        """Страница /create/ доступна авторизованному пользователю."""
-        response = self.authorized_client.get(self.private_urls[0][0])
-        self.assertEqual(response.status_code, OK)
+        """Страницы private доступны авторизованному пользователю."""
+        page_url_private_names = {
+            "/create/": HTTPStatus.FOUND,
+            self.post_edit_url: HTTPStatus.FOUND
+        }
+        for page, expected_status in page_url_private_names.items():
+            with self.subTest(page=page):
+                response = self.guest_client.get(page).status_code
+                self.assertEqual(response, expected_status)
 
     def test_post_edit_url_exists_at_desired_location_authorized(self):
         """Страница /posts/1/edit/ доступна авторизованному автору поста
