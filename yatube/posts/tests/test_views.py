@@ -130,7 +130,6 @@ class PostPagesTests(TestCase):
         self.assertEqual(is_edit, True)
 
     def test_post_show_correct_text(self):
-        """Additional check of first post text appering in the right group."""
         templates_pages_names = {
             reverse('posts:index'): self.post.text,
             reverse('posts:group_posts',
@@ -145,7 +144,6 @@ class PostPagesTests(TestCase):
                 self.assertEqual(first_object.text, expected)
 
     def test_post_show_correct_post_id(self):
-        """Checking id of first post and appering in the right group."""
         templates_pages_names = {
             reverse('posts:index'): self.post.id,
             reverse('posts:group_posts',
@@ -160,7 +158,6 @@ class PostPagesTests(TestCase):
                 self.assertEqual(first_object.id, expected)
 
     def test_new_post_do_not_view_other_group(self):
-        """New post will not appear in other group."""
         Group.objects.create(
             title='Другой заголовок',
             slug=OTHER_GROUP_SLUG,
