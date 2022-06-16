@@ -86,27 +86,6 @@ class PostPagesTests(TestCase):
                         kwargs={'post_id': self.post.id})))
         self.assertTemplateUsed(response, 'posts/create_post.html')
 
-    def test_post_show_picture(self):
-        templates_pages_names = {
-            reverse('posts:index'): self.post.image,
-            reverse('posts:group_posts',
-                    kwargs={'slug': self.group.slug}): self.post.image,
-            reverse('posts:profile',
-                    kwargs={'username': self.user.username}): self.post.image,
-        }
-        for value, expected in templates_pages_names.items():
-            with self.subTest(value=value):
-                response = self.authorized_client.get(value)
-                first_object = response.context['page_obj'][0]
-                self.assertEqual(first_object.image, expected)
-
-    def test_post_show_picture_in_post(self):
-        response = (self.authorized_client.
-                    get(reverse('posts:post_edit',
-                        kwargs={'post_id': self.post.id})))
-        post = response.context['post']
-        self.assertEqual(post.image, self.post.image)
-
     def test_group_list_page_show_correct_context(self):
         response = (self.authorized_client.
                     get(reverse('posts:group_posts',
@@ -244,10 +223,7 @@ class PaginatorViewsTest(TestCase):
                 self.assertEqual(len(response.context['page_obj']), expected)
 
     def test_second_page_contains_three_records(self):
-        all_posts = Post.objects.filter(
-            author__username=self.user.username
-        ).count()
-        second_page_posts = all_posts - settings.POSTS_PER_PAGE
+        second_page_posts = 3
         templates_pages_names = {
             reverse('posts:index'): second_page_posts,
             reverse('posts:group_posts',

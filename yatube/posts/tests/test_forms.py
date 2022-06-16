@@ -1,13 +1,12 @@
 import shutil
 import tempfile
-from http import HTTPStatus
 
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from ..models import Comment, Group, Post, User
+from ..models import Group, Post, User
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
@@ -142,37 +141,3 @@ class PostFormTest(TestCase):
         self.assertEqual(Post.objects.count(), posts_count)
         self.assertEqual(self.post.text, self.post.text)
         self.assertNotEqual(self.post.text, form_data['text'])
-
-    def test_add_comments_by_guest(self):
-        comment_count = Comment.objects.count()
-        form_data = {
-            'text': 'Comment from guest client',
-        }
-        response = self.guest_client.post(
-            reverse('posts:add_comment', kwargs={'post_id': self.post.id}),
-            data=form_data,
-            follow=True
-        )
-        comment_url = reverse(
-            'posts:add_comment',
-            kwargs={'post_id': self.post.id}
-        )
-        login_url = reverse('users:login')
-        self.assertRedirects(response, f'{login_url}?next={comment_url}')
-        self.assertEqual(Comment.objects.count(), comment_count)
-
-    def test_add_comments_by_authorized_user(self):
-        comment_count = Comment.objects.count()
-        form_data = {
-            'text': 'Writing comment',
-        }
-        response = self.authorized_client.post(
-            reverse('posts:add_comment', kwargs={'post_id': self.post.id}),
-            data=form_data,
-            follow=True
-        )
-        last_comment = response.context['comments'][0]
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertEqual(Comment.objects.count(), comment_count + 1)
-        self.assertEqual(last_comment.text, form_data['text'])
-        self.assertEqual(last_comment.post.id, self.post.id)
