@@ -25,6 +25,7 @@
                 {% url 'posts:post_create' %}
               {% endif %}" method="post" enctype="multipart/form-data">
               </form>
+              <form method="post" enctype="multipart/form-data"></form>
               {% csrf_token %}
               {% for field in form %}
                 <div class="form-group row" aria-required={% if field.field.required %}"true"{% else %}"false"{% endif %}>
