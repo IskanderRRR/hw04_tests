@@ -207,7 +207,7 @@ class PaginatorViewsTest(TestCase):
                 self.assertEqual(len(response.context['page_obj']), expected)
 
     def test_second_page_contains_three_records(self):
-        second_page_posts = 3
+        second_page_posts = TESTING_ATTEMPTS % POSTS_PER_PAGE
         templates_pages_names = {
             reverse('posts:index'): second_page_posts,
             reverse('posts:group_posts',

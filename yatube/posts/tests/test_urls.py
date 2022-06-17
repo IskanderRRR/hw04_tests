@@ -80,8 +80,10 @@ class PostURLTests(TestCase):
         client_url_redirect = [
             [self.guest_client, reverse(
                 'posts:post_create'), REDIRECT_LOGIN_CREATE],
-            [self.guest_client, '/posts/1/edit/', REDIRECT_LOGIN_EDIT],
-            [self.authorized_client2, '/posts/1/edit/', REDIRECT_POST_DETAIL]
+            [self.guest_client, f'/posts/{self.post.id}/edit/',
+                                REDIRECT_LOGIN_EDIT],
+            [self.authorized_client2, f'/posts/{self.post.id}/edit/',
+                                      REDIRECT_POST_DETAIL]
         ]
         for client, url, redirect_url in client_url_redirect:
             with self.subTest(url=url):

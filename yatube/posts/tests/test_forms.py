@@ -41,7 +41,7 @@ class PostFormTest(TestCase):
     def test_create_group_post(self):
         posts_count = Post.objects.count()
         form_data = {
-            'text': 'Another test',
+            'text': 'Test text',
             'group': self.group.id,
             'author_id': self.user.id
         }
@@ -50,18 +50,17 @@ class PostFormTest(TestCase):
             data=form_data,
             follow=True
         )
-        last_object = response.context['page_obj'][0]
         self.assertRedirects(response,
                              reverse('posts:profile',
                                      kwargs={'username': self.user}))
         self.assertEqual(Post.objects.count(), posts_count + 1)
-        self.assertEqual(last_object.text, form_data['text'])
-        self.assertEqual(last_object.group.id, form_data['group'])
+        self.assertEqual(self.post.text, form_data['text'])
+        self.assertEqual(self.group.id, form_data['group'])
 
     def test_edit_post(self):
         posts_count = Post.objects.count()
         form_data = {
-            'text': 'Текст поста с группой',
+            'text': 'Test text',
             'group': self.group.id,
             'author_id': self.user.id
         }
@@ -70,16 +69,14 @@ class PostFormTest(TestCase):
             data=form_data,
             follow=True
         )
-        post_context = response.context['post']
         self.assertRedirects(response,
                              reverse('posts:post_detail',
                                      kwargs={'post_id': self.post.id}))
         self.assertEqual(Post.objects.count(), posts_count)
-        self.assertEqual(post_context.text, form_data['text'])
-        self.assertEqual(post_context.group.id, form_data['group'])
+        self.assertEqual(self.post.text, form_data['text'])
+        self.assertEqual(self.group.id, form_data['group'])
 
     def test_create_post_by_guest(self):
-        posts_count = Post.objects.count()
         form_data = {
             'text': 'Post from unauthorized client',
         }
@@ -91,7 +88,6 @@ class PostFormTest(TestCase):
         create_url = reverse('posts:post_create')
         login_url = reverse('users:login')
         self.assertRedirects(response, f'{login_url}?next={create_url}')
-        self.assertEqual(Post.objects.count(), posts_count)
 
     def test_edit_post_by_guest(self):
         posts_count = Post.objects.count()
@@ -107,5 +103,4 @@ class PostFormTest(TestCase):
         login_url = reverse('users:login')
         self.assertRedirects(response, f'{login_url}?next={edit_url}')
         self.assertEqual(Post.objects.count(), posts_count)
-        self.assertEqual(self.post.text, self.post.text)
         self.assertNotEqual(self.post.text, form_data['text'])
