@@ -1,80 +1,85 @@
-import shutil
-import tempfile
+import shutil 
+import tempfile 
 
-from django.conf import settings
-from django.test import Client, TestCase, override_settings
-from django.urls import reverse
+from django.conf import settings 
+from django.test import Client, TestCase, override_settings 
+from django.urls import reverse 
 
-from ..models import Group, Post, User
-
-TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
+from ..models import Group, Post, User 
 
 
-@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
-class PostFormTest(TestCase):
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR) 
 
-    @classmethod
-    def setUpClass(self):
-        super().setUpClass()
-        self.user = User.objects.create_user(username='auth')
-        self.group = Group.objects.create(
-            title='Test group',
-            slug='test-slug',
-            description='Test description',
-        )
-        self.post = Post.objects.create(
-            author=self.user,
-            text='Test text',
-            group=self.group,
-        )
 
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT) 
+class PostFormTest(TestCase): 
 
-    def setUp(self):
-        self.guest_client = Client()
-        self.authorized_client = Client()
-        self.authorized_client.force_login(self.user)
+ 
 
-    def test_create_group_post(self):
-        posts_count = Post.objects.count()
-        form_data = {
-            'text': 'Test text',
-            'group': self.group.id,
-            'author_id': self.user.id
-        }
-        response = self.authorized_client.post(
-            reverse('posts:post_create'),
-            data=form_data,
-            follow=True
-        )
-        self.assertRedirects(response,
-                             reverse('posts:profile',
-                                     kwargs={'username': self.user}))
-        self.assertEqual(Post.objects.count(), posts_count + 1)
-        self.assertEqual(self.post.text, form_data['text'])
-        self.assertEqual(self.group.id, form_data['group'])
+    @classmethod 
+    def setUpClass(self): 
+        super().setUpClass() 
+        self.user = User.objects.create_user(username='auth') 
+        self.group = Group.objects.create( 
+            title='Test group', 
+            slug='test-slug', 
+            description='Test description', 
+        ) 
+        self.post = Post.objects.create( 
+            author=self.user, 
+            text='Test text', 
+            group=self.group, 
+        ) 
 
-    def test_edit_post(self):
-        posts_count = Post.objects.count()
-        form_data = {
-            'text': 'Test text',
-            'group': self.group.id,
-            'author_id': self.user.id
-        }
-        response = self.authorized_client.post(
-            reverse('posts:post_edit', kwargs={'post_id': self.post.id}),
-            data=form_data,
-            follow=True
-        )
-        self.assertRedirects(response,
-                             reverse('posts:post_detail',
-                                     kwargs={'post_id': self.post.id}))
-        self.assertEqual(Post.objects.count(), posts_count)
-        self.assertEqual(self.post.text, form_data['text'])
-        self.assertEqual(self.group.id, form_data['group'])
+ 
+
+    @classmethod 
+    def tearDownClass(cls): 
+        super().tearDownClass() 
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True) 
+
+ 
+
+    def setUp(self): 
+        self.guest_client = Client() 
+        self.authorized_client = Client() 
+        self.authorized_client.force_login(self.user) 
+
+    def test_create_group_post(self): 
+        posts_count = Post.objects.count() 
+        form_data = { 
+            'text': 'Another test', 
+            'group': self.group.id, 
+            'author_id': self.user.id 
+        } 
+        response = self.authorized_client.post( 
+            reverse('posts:post_create'), 
+            data=form_data, 
+            follow=True 
+        ) 
+        self.assertRedirects(response, 
+                             reverse('posts:profile', 
+                                     kwargs={'username': self.user})) 
+        self.assertEqual(Post.objects.count(), posts_count + 1) 
+        self.assertTrue(Post.objects.filter( text=form_data['text']).exists())
+
+    def test_edit_post(self): 
+        posts_count = Post.objects.count() 
+        form_data = { 
+            'text': 'Текст поста с группой', 
+            'group': self.group.id, 
+            'author_id': self.user.id 
+        } 
+        response = self.authorized_client.post( 
+            reverse('posts:post_edit', kwargs={'post_id': self.post.id}), 
+            data=form_data, 
+            follow=True 
+        ) 
+        self.assertRedirects(response, 
+                             reverse('posts:post_detail', 
+                                     kwargs={'post_id': self.post.id})) 
+        self.assertEqual(Post.objects.count(), posts_count) 
+        self.assertTrue(Post.objects.filter( text=form_data['text']).exists())
 
     def test_create_post_by_guest(self):
         form_data = {
