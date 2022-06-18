@@ -54,7 +54,8 @@ class PostFormTest(TestCase):
                              reverse('posts:profile',
                                      kwargs={'username': self.user}))
         self.assertEqual(Post.objects.count(), posts_count + 1)
-        self.assertTrue(Post.objects.filter(text=form_data['text']).exists())
+        self.assertTrue(Post.objects.filter(text=form_data['text'],
+                                            group=form_data['group']).exists())
         self.assertEqual(self.group.id, form_data['group'])
         self.assertTrue(Post.objects.filter(
                         author=form_data['author_id']).exists())
