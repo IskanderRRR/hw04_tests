@@ -1,5 +1,6 @@
 import shutil
 import tempfile
+from tokenize import group
 
 from django.conf import settings
 from django.test import Client, TestCase, override_settings
@@ -76,7 +77,8 @@ class PostFormTest(TestCase):
                              reverse('posts:post_detail',
                                      kwargs={'post_id': self.post.id}))
         self.assertEqual(Post.objects.count(), posts_count)
-        self.assertTrue(Post.objects.filter(text=form_data['text']).exists())
+        self.assertTrue(Post.objects.filter(text=form_data['text'],
+                                            group=form_data['group']).exists())
 
     def test_create_post_by_guest(self):
         form_data = {
