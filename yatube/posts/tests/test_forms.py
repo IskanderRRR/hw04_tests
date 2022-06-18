@@ -54,11 +54,23 @@ class PostFormTest(TestCase):
                              reverse('posts:profile',
                                      kwargs={'username': self.user}))
         self.assertEqual(Post.objects.count(), posts_count + 1)
+        self.assertEqual(
+            Post.objects.filter(text=form_data['text'],
+                                group=form_data['group']
+                                ).get().text,
+            form_data['text'])
         self.assertTrue(Post.objects.filter(text=form_data['text'],
                                             group=form_data['group']).exists())
-        self.assertEqual(self.group.id, form_data['group'])
-        self.assertTrue(Post.objects.filter(
-                        author=form_data['author_id']).exists())
+        self.assertEqual(Post.objects.filter(
+                         author=form_data['author_id'],
+                         text=form_data['text'],
+                         group=form_data['group']
+                         ).get().group_id, form_data['group'])
+        self.assertEqual(Post.objects.filter(
+                         author=form_data['author_id'],
+                         text=form_data['text'],
+                         group=form_data['group']
+                         ).get().author_id, form_data['author_id'])
 
     def test_edit_post(self):
         posts_count = Post.objects.count()
@@ -78,6 +90,11 @@ class PostFormTest(TestCase):
         self.assertEqual(Post.objects.count(), posts_count)
         self.assertTrue(Post.objects.filter(text=form_data['text'],
                                             group=form_data['group']).exists())
+        self.assertEqual(
+            Post.objects.filter(text=form_data['text'],
+                                group=form_data['group']
+                                ).get().text,
+            form_data['text'])
 
     def test_create_post_by_guest(self):
         form_data = {
