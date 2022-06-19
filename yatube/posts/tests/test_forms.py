@@ -72,7 +72,7 @@ class PostFormTest(TestCase):
             data=form_data,
             follow=True
         )
-        post = Post.objects.filter(group=form_data['group']).first()
+        post = Post.objects.filter(id=self.post.id).first()
         self.assertEqual(post.text, form_data['text'])
         self.assertEqual(post.group_id, form_data['group'])
         self.assertEqual(post.author_id, form_data['author_id'])
